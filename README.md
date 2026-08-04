@@ -66,7 +66,15 @@ See [`docs/DESIGN.md`](docs/DESIGN.md) for detailed architecture, mathematical a
 
 ## Status
 
-Early development. The conversion functions and reference tests are not yet complete.
+Version 0.1.0 provides:
+
+- IEC 60751 Pt100 resistance-to-temperature conversion
+- temperature-to-resistance conversion
+- input and supported-range validation
+- independently sourced reference-value tests
+- fixed, sequential, repeating, and noisy simulation readers
+- reproducible seeded simulation noise
+- a stable initial public API
 
 ## License
 
