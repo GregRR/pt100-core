@@ -317,40 +317,85 @@ The following decisions should be made before the first stable release:
 
 
 
-## References
-
-The implementation is based on the standardized resistance–temperature
-relationship for industrial platinum resistance thermometers.
+## References and calculations
 
 ### Normative standard
 
-- IEC 60751:2022, *Industrial platinum resistance thermometers and
-  platinum temperature sensors*, International Electrotechnical
-  Commission.
+* International Electrotechnical Commission. **IEC 60751:2022,
+  Industrial platinum resistance thermometers and platinum temperature
+  sensors**, Edition 3.0, published January 27, 2022.
 
-  This is the normative source for the standardized Pt100
-  resistance–temperature relationship, supported range, and sensor
-  requirements.
+  IEC 60751 is the normative basis for the standardized resistance-
+  temperature relationship and requirements for industrial platinum
+  resistance thermometers and platinum temperature sensors.
 
-### Publicly accessible technical references
+  https://webstore.iec.ch/en/publication/63753
 
-- Analog Devices, *MAX31865 RTD-to-Digital Converter Data Sheet*,
-  "Temperature Conversion" section.
+The complete standard is not reproduced in this repository because it
+is a copyrighted publication available from the IEC.
 
-  This data sheet publishes the IEC Pt100 Callendar–Van Dusen equation,
-  PT-385 coefficient values, and the -200 °C to +850 °C range used by
-  this implementation.
+### Public technical verification
 
-- Fluke Calibration, *PT100 Calculator / PT100 Resistance Table
-  Generator*.
+* Analog Devices. **MAX31865 RTD-to-Digital Converter Data Sheet**,
+  “Temperature Conversion” section.
 
-  This reference publishes the PT-385 equation and coefficient values
-  and identifies IEC 60751 as their source.
+  This data sheet provides an openly accessible description of the
+  Callendar–Van Dusen relationship used for platinum RTDs and publishes
+  the standard PT-385 coefficients used by this implementation.
 
-The implementation constants are:
+  https://www.analog.com/media/en/technical-documentation/data-sheets/MAX31865.pdf
+
+* Fluke Calibration. **PT100 Calculator: Convert Resistance and
+  Temperature**.
+
+  The Fluke calculator publishes the PT-385 equation and coefficients
+  and identifies IEC 60751, ASTM E1137, and JIS C 1604 as its source
+  standards. It is used as an independently accessible check of
+  selected resistance-temperature reference values.
+
+  https://www.fluke.com/en-ca/learn/tools-calculators/pt100-calculator
+
+  Accessed August 4, 2026.
+
+### Implemented curve
+
+The initial implementation supports the standard IEC 60751 Pt100
+PT-385 curve:
 
 ```text
 R0 = 100.0 Ω
 A  = 3.9083 × 10⁻³ °C⁻¹
 B  = -5.775 × 10⁻⁷ °C⁻²
 C  = -4.183 × 10⁻¹² °C⁻⁴
+```
+
+For temperatures from 0 °C through 850 °C:
+
+```text
+R(t) = R0 × (1 + A×t + B×t²)
+```
+
+For temperatures from -200 °C through 0 °C:
+
+```text
+R(t) = R0 × [1 + A×t + B×t² + C×(t - 100)×t³]
+```
+
+The implementation models the ideal standardized curve. It does not
+include individual probe calibration, sensor tolerance, lead-wire
+resistance, self-heating, or measurement-circuit errors.
+
+### Test provenance
+
+Reference-value tests use selected, rounded PT-385 values independently
+checked against the Fluke PT100 calculator and published standard-
+compatible tables.
+
+Exact supported-range boundary tests use values calculated from the full
+Callendar–Van Dusen equation rather than rounded two-decimal table
+values. This avoids rejecting a rounded boundary value such as 18.52 Ω
+when the equation-defined resistance at -200 °C is slightly greater.
+
+Round-trip tests are supplementary and are not treated as independent
+verification, because forward and inverse implementations could share
+the same defect.
