@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pt100-core"
+version = "0.0.0"
+description = "IEC 60751 Pt100 resistance and temperature conversion for Python."
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MPL-2.0"
+license-files = ["LICENSE"]
+authors = [
+{ name = "Greg Roe" },
+]
+keywords = [
+"pt100",
+"rtd",
+"iec-60751",
+"temperature",
+"sensor",
+"callendar-van-dusen",
+]
+classifiers = [
+"Development Status :: 2 - Pre-Alpha",
+"Intended Audience :: Developers",
+"Intended Audience :: Science/Research",
+"Programming Language :: Python :: 3",
+"Programming Language :: Python :: 3.14",
+"Topic :: Scientific/Engineering",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+"mypy",
+"pytest",
+"ruff",
+]
+
+[project.urls]
+Homepage = "https://github.com/GregRR/pt100-core"
+Repository = "https://github.com/GregRR/pt100-core"
+Issues = "https://github.com/GregRR/pt100-core/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rtd"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+"B",
+"E",
+"F",
+"I",
+"SIM",
+"UP",
+]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = [
+"src",
+"tests",
+]
