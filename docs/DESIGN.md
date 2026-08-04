@@ -313,3 +313,44 @@ The following decisions should be made before the first stable release:
 6. Final open-source license.
 7. Minimum supported Python version.
 8. Whether the distribution name should remain `pt100-core` after a future repository rename.
+
+
+
+
+## References
+
+The implementation is based on the standardized resistance–temperature
+relationship for industrial platinum resistance thermometers.
+
+### Normative standard
+
+- IEC 60751:2022, *Industrial platinum resistance thermometers and
+  platinum temperature sensors*, International Electrotechnical
+  Commission.
+
+  This is the normative source for the standardized Pt100
+  resistance–temperature relationship, supported range, and sensor
+  requirements.
+
+### Publicly accessible technical references
+
+- Analog Devices, *MAX31865 RTD-to-Digital Converter Data Sheet*,
+  "Temperature Conversion" section.
+
+  This data sheet publishes the IEC Pt100 Callendar–Van Dusen equation,
+  PT-385 coefficient values, and the -200 °C to +850 °C range used by
+  this implementation.
+
+- Fluke Calibration, *PT100 Calculator / PT100 Resistance Table
+  Generator*.
+
+  This reference publishes the PT-385 equation and coefficient values
+  and identifies IEC 60751 as their source.
+
+The implementation constants are:
+
+```text
+R0 = 100.0 Ω
+A  = 3.9083 × 10⁻³ °C⁻¹
+B  = -5.775 × 10⁻⁷ °C⁻²
+C  = -4.183 × 10⁻¹² °C⁻⁴
