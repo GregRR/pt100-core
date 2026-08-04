@@ -27,6 +27,14 @@ from __future__ import annotations
 
 import math
 
+__all__ = [
+    "MAX_TEMPERATURE_C",
+    "MIN_TEMPERATURE_C",
+    "R0_OHMS",
+    "celsius_to_resistance",
+    "resistance_to_celsius",
+]
+
 # IEC 60751 PT-385 Callendar–Van Dusen coefficients.
 # Verified against the Analog Devices MAX31865 data sheet and Fluke's
 # published PT100 calculation references.
