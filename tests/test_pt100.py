@@ -40,7 +40,10 @@ def test_celsius_to_resistance_matches_reference_table(
 @pytest.mark.parametrize(
     ("resistance_ohms", "expected_temperature_c"),
     [
-        (18.52, -200.0),
+        (
+            pt100.celsius_to_resistance(pt100.MIN_TEMPERATURE_C),
+            -200.0,
+        ),
         (60.26, -100.0),
         (80.31, -50.0),
         (100.00, 0.0),
@@ -50,7 +53,12 @@ def test_celsius_to_resistance_matches_reference_table(
         (175.86, 200.0),
         (247.09, 400.0),
         (329.64, 650.0),
-        (390.48, 850.0),
+        (
+            pt100.celsius_to_resistance(
+                pt100.MAX_TEMPERATURE_C
+            ),
+            850.0,
+        ),
     ],
 )
 
