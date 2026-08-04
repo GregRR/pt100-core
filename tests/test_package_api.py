@@ -2,13 +2,28 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from rtd import pt100
+from rtd import pt100, simulation
 
 
 def test_package_exports_pt100_module() -> None:
     from rtd import pt100 as imported_pt100
 
     assert imported_pt100 is pt100
+
+
+def test_package_exports_simulation_module() -> None:
+    from rtd import simulation as imported_simulation
+
+    assert imported_simulation is simulation
+
+
+def test_package_public_api() -> None:
+    import rtd
+
+    assert set(rtd.__all__) == {
+        "pt100",
+        "simulation",
+    }
 
 
 def test_pt100_public_api() -> None:
@@ -18,4 +33,15 @@ def test_pt100_public_api() -> None:
         "R0_OHMS",
         "celsius_to_resistance",
         "resistance_to_celsius",
+    }
+
+
+def test_simulation_public_api() -> None:
+    assert set(simulation.__all__) == {
+        "FixedResistanceReader",
+        "NoisyTemperatureReader",
+        "ResistanceReader",
+        "ResistanceSequenceReader",
+        "TemperatureSequenceReader",
+        "read_temperature_celsius",
     }

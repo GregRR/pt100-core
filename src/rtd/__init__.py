@@ -2,17 +2,20 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Resistance temperature detector conversion tools.
-
-The initial public API provides IEC 60751 Pt100 conversion through the
-:mod:`rtd.pt100` module.
+"""Resistance temperature detector conversion and simulation tools.
 
 Example:
-    from rtd import pt100
+    from rtd import pt100, simulation
 
-    temperature_c = pt100.resistance_to_celsius(119.3971)
+    reader = simulation.TemperatureSequenceReader(
+        [20.0, 40.0, 60.0]
+    )
+    temperature_c = simulation.read_temperature_celsius(reader)
 """
 
-from . import pt100
+from . import pt100, simulation
 
-__all__ = ["pt100"]
+__all__ = [
+    "pt100",
+    "simulation",
+]
