@@ -214,21 +214,19 @@ Hardware and calibration layers may correct these effects before passing resista
 
 Initial structure:
 
-```text
-pt100-core/
-├── src/
-│   └── rtd/
-│       ├── __init__.py
-│       ├── pt100.py
-│       └── simulation.py
-├── tests/
-│   ├── test_pt100.py
-│   └── test_simulation.py
-├── docs/
-│   └── DESIGN.md
-├── .gitignore
-├── pyproject.toml
-└── README.md
+```
+src/rtd/
+├── __init__.py
+├── _curves.py
+├── _models.py
+├── pt100.py
+└── simulation.py
+
+tests/
+├── test_models.py
+├── test_package_api.py
+├── test_pt100.py
+└── test_simulation.py
 ```
 
 The `rtd` namespace is intentionally broader than the initial repository name.
@@ -245,22 +243,96 @@ from rtd import pt100
 
 Once the project genuinely supports additional RTD families, the repository may be renamed `rtd-core`. The Python import path would remain unchanged.
 
-## 12. Future RTD-family support
+
+## 12. Generalized RTD architecture and future support
+
+The conversion architecture separates the normalized resistance-temperature curve from the nominal resistance of a particular RTD model.
+
+A curve describes the relationship:
+
+```text
+R(T) / R0
+```
+
+independently of the absolute value of `R0`.
+
+An RTD model combines:
+
+* a curve;
+* a nominal or calibrated resistance at 0 °C (`R0`);
+* a model identity.
+
+This permits multiple RTD models to share one verified standardized curve without duplicating conversion logic.
+
+The initial implementation defines the IEC 60751 PT-385 Callendar–Van Dusen curve and combines it with `R0 = 100 Ω` for the supported Pt100 model.
+
+The curve and model infrastructure remains internal until the public API for user-defined and calibrated models has been deliberately designed.
+
+### Measurement boundary
+
+The core library begins with the best available estimate of the RTD sensing element's resistance in ohms.
+
+Two-wire, three-wire, and four-wire topology affects acquisition and compensation rather than the standardized resistance-temperature relationship. Wiring topology, excitation, ADC configuration, reference-resistor calculations, lead-resistance compensation, and hardware fault detection therefore belong to hardware-facing acquisition layers.
+
+The scientific conversion layer must not require a wire-count parameter.
+
+### Potential future additions
 
 Potential future additions include:
 
-- Pt1000
-- Pt500
-- alternate standardized platinum curves
-- user-supplied Callendar–Van Dusen coefficients
-- individually calibrated R0 values
-- calibrated coefficient sets
-- tolerance-class calculations
-- uncertainty propagation
-- vectorized conversion
-- tabular or lookup-based conversion for constrained systems
+* Pt1000
+* Pt500
+* alternate standardized platinum curves
+* user-supplied Callendar–Van Dusen coefficients
+* individually calibrated R0 values
+* calibrated coefficient sets
+* tolerance-class calculations
+* uncertainty propagation
+* vectorized conversion
+* tabular or lookup-based conversion for constrained systems
 
-Additional RTD types should not be advertised until their equations, ranges, and reference tests are implemented and documented.
+Nominal conversion, calibration, tolerance, and uncertainty are related but separate concerns. Basic resistance-temperature conversion should continue to return the ideal value represented by the selected model. Calibration, tolerance, and uncertainty should be layered on top rather than silently altering nominal conversion behavior.
+
+The scalar, dependency-free implementation should remain the reference calculation. Future vectorized or lookup implementations should be verified against it.
+
+### Support-readiness policy
+
+An RTD type or standardized curve must not be described as supported merely because the generalized implementation is mathematically capable of calculating it.
+
+Before an additional RTD type is publicly exported or advertised, the project must include:
+
+* the applicable equation or curve definition;
+* authoritative coefficient provenance;
+* the documented valid temperature range;
+* independently sourced reference values;
+* representative negative- and positive-temperature tests where applicable;
+* boundary and out-of-range tests;
+* round-trip and monotonicity tests;
+* public-API tests;
+* user documentation;
+* simulation tests where simulation support is provided.
+
+Unfinished RTD types should not be exposed as placeholder modules, constants, or documented supported features.
+
+### Next development milestone
+
+The next intended RTD type is Pt1000.
+
+Development should proceed in this order:
+
+1. Introduce the internal normalized curve abstraction.
+2. Introduce the internal reusable RTD model.
+3. Refactor Pt100 onto the shared model without changing its public API.
+4. Make the existing simulation implementation use the shared Pt100 model internally.
+5. Run all existing independently sourced Pt100 reference tests unchanged.
+6. Add generic model tests for R0 behavior, normalized resistance, boundaries, validation, monotonicity, and round trips.
+7. Research and document the Pt1000 standard, range, and independent reference values.
+8. Implement and test the Pt1000 public module.
+9. Make simulation publicly model-selectable once more than one verified RTD type exists.
+10. Export and advertise Pt1000 only after the support-readiness requirements are satisfied.
+
+Pt500 and other RTD variants should follow the same process rather than being assumed supported merely because they can share the generalized calculation engine.
+
 
 ## 13. Related future repositories
 
@@ -301,18 +373,21 @@ Version 1 will not include:
 - graphical interfaces
 - network services
 
-## 15. Open design decisions
+## 15. Deferred design decisions
 
 The following decisions should be made before the first stable release:
 
-1. Exact supported temperature range.
-2. Authoritative reference table used for verification.
-3. Numerical inversion method below 0 °C.
-4. Required absolute and relative numerical tolerances.
-5. Whether simulation belongs in the core distribution or an optional module.
-6. Final open-source license.
-7. Minimum supported Python version.
-8. Whether the distribution name should remain `pt100-core` after a future repository rename.
+The following decisions remain intentionally deferred:
+
+1. The eventual public API for user-defined RTD curves and models.
+2. The public representation of individually calibrated R0 values.
+3. The public representation of calibrated coefficient sets.
+4. Tolerance-class calculation APIs.
+5. Uncertainty-propagation APIs and result types.
+6. Optional vectorized conversion support.
+7. Lookup-table generation and interpolation APIs.
+8. Whether the distribution and repository should eventually be renamed
+   after multiple RTD families are genuinely supported.
 
 
 

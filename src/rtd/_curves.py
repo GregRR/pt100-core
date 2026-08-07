@@ -1,0 +1,208 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+"""Internal RTD resistance-ratio curve definitions."""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+from typing import Protocol
+
+__all__ = [
+    "CallendarVanDusenCurve",
+    "IEC_60751_PT385",
+    "RTDCurve",
+]
+
+_BISECTION_ITERATIONS = 60
+
+
+class RTDCurve(Protocol):
+    """Internal interface for a normalized RTD resistance curve."""
+
+    @property
+    def name(self) -> str:
+        """Return the descriptive name of the curve."""
+        ...
+
+    @property
+    def minimum_temperature_c(self) -> float:
+        """Return the minimum supported temperature."""
+        ...
+
+    @property
+    def maximum_temperature_c(self) -> float:
+        """Return the maximum supported temperature."""
+        ...
+
+    def resistance_ratio(self, temperature_c: float) -> float:
+        """Return R(T) / R0 for a temperature in Celsius."""
+        ...
+
+    def temperature_from_resistance_ratio(
+        self,
+        resistance_ratio: float,
+    ) -> float:
+        """Return temperature in Celsius for R(T) / R0."""
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class CallendarVanDusenCurve:
+    """A normalized Callendar-Van Dusen platinum RTD curve."""
+
+    name: str
+    a: float
+    b: float
+    c: float
+    minimum_temperature_c: float
+    maximum_temperature_c: float
+
+    def __post_init__(self) -> None:
+        coefficients = (self.a, self.b, self.c)
+        if not all(math.isfinite(value) for value in coefficients):
+            raise ValueError("Curve coefficients must be finite")
+
+        if not math.isfinite(self.minimum_temperature_c):
+            raise ValueError("Minimum temperature must be finite")
+        if not math.isfinite(self.maximum_temperature_c):
+            raise ValueError("Maximum temperature must be finite")
+        if self.minimum_temperature_c >= self.maximum_temperature_c:
+            raise ValueError(
+                "Minimum temperature must be below maximum temperature"
+            )
+        if not (
+            self.minimum_temperature_c <= 0.0
+            <= self.maximum_temperature_c
+        ):
+            raise ValueError("Curve temperature range must include 0 °C")
+
+    def resistance_ratio(self, temperature_c: float) -> float:
+        """Return the normalized resistance ratio R(T) / R0."""
+        temperature = float(temperature_c)
+        self._validate_temperature(temperature)
+        return self._resistance_ratio_unchecked(temperature)
+
+    def temperature_from_resistance_ratio(
+        self,
+        resistance_ratio: float,
+    ) -> float:
+        """Invert a normalized resistance ratio to Celsius."""
+        ratio = float(resistance_ratio)
+        self._validate_resistance_ratio(ratio)
+
+        if ratio == 1.0:
+            return 0.0
+
+        if ratio > 1.0:
+            return self._nonnegative_ratio_to_celsius(ratio)
+
+        return self._negative_ratio_to_celsius(ratio)
+
+    def _resistance_ratio_unchecked(self, temperature_c: float) -> float:
+        resistance_ratio = (
+            1.0
+            + self.a * temperature_c
+            + self.b * temperature_c**2
+        )
+
+        if temperature_c < 0.0:
+            resistance_ratio += (
+                self.c
+                * (temperature_c - 100.0)
+                * temperature_c**3
+            )
+
+        return resistance_ratio
+
+    def _nonnegative_ratio_to_celsius(
+        self,
+        resistance_ratio: float,
+    ) -> float:
+        if self.b == 0.0:
+            if self.a == 0.0:
+                raise ValueError(
+                    f"Resistance ratio cannot be converted using {self.name}"
+                )
+            temperature_c = (resistance_ratio - 1.0) / self.a
+        else:
+            discriminant = (
+                self.a**2
+                - 4.0 * self.b * (1.0 - resistance_ratio)
+            )
+
+            if discriminant < 0.0:
+                raise ValueError(
+                    f"Resistance ratio cannot be converted using {self.name}"
+                )
+
+            temperature_c = (
+                -self.a + math.sqrt(discriminant)
+            ) / (2.0 * self.b)
+
+        if temperature_c > self.maximum_temperature_c:
+            raise ValueError("Resistance ratio is above the supported range")
+
+        return temperature_c
+
+    def _negative_ratio_to_celsius(
+        self,
+        resistance_ratio: float,
+    ) -> float:
+        lower_c = self.minimum_temperature_c
+        upper_c = 0.0
+
+        for _ in range(_BISECTION_ITERATIONS):
+            midpoint_c = (lower_c + upper_c) / 2.0
+            midpoint_ratio = self._resistance_ratio_unchecked(midpoint_c)
+
+            if midpoint_ratio < resistance_ratio:
+                lower_c = midpoint_c
+            else:
+                upper_c = midpoint_c
+
+        return (lower_c + upper_c) / 2.0
+
+    def _validate_temperature(self, temperature_c: float) -> None:
+        if not math.isfinite(temperature_c):
+            raise ValueError("Temperature must be finite")
+        if not (
+            self.minimum_temperature_c
+            <= temperature_c
+            <= self.maximum_temperature_c
+        ):
+            raise ValueError(
+                "Temperature must be between "
+                f"{self.minimum_temperature_c:g} °C and "
+                f"{self.maximum_temperature_c:g} °C"
+            )
+
+    def _validate_resistance_ratio(self, resistance_ratio: float) -> None:
+        if not math.isfinite(resistance_ratio):
+            raise ValueError("Resistance ratio must be finite")
+        if resistance_ratio <= 0.0:
+            raise ValueError("Resistance ratio must be greater than zero")
+
+        minimum_ratio = self._resistance_ratio_unchecked(
+            self.minimum_temperature_c
+        )
+        maximum_ratio = self._resistance_ratio_unchecked(
+            self.maximum_temperature_c
+        )
+
+        if resistance_ratio < minimum_ratio:
+            raise ValueError("Resistance ratio is below the supported range")
+        if resistance_ratio > maximum_ratio:
+            raise ValueError("Resistance ratio is above the supported range")
+
+
+IEC_60751_PT385 = CallendarVanDusenCurve(
+    name="IEC 60751 PT-385 curve",
+    a=3.9083e-3,
+    b=-5.775e-7,
+    c=-4.183e-12,
+    minimum_temperature_c=-200.0,
+    maximum_temperature_c=850.0,
+)

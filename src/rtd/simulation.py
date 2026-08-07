@@ -16,7 +16,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from . import pt100
+from ._models import PT100_IEC_60751 as _PT100_MODEL
 
 __all__ = [
     "FixedResistanceReader",
@@ -117,7 +117,7 @@ class TemperatureSequenceReader:
             )
 
         readings = tuple(
-            pt100.celsius_to_resistance(temperature)
+            _PT100_MODEL.celsius_to_resistance(temperature)
             for temperature in self.temperatures_c
         )
 
@@ -151,7 +151,7 @@ class NoisyTemperatureReader:
 
     def __post_init__(self) -> None:
         # Validate the base temperature through the public conversion API.
-        pt100.celsius_to_resistance(self.temperature_c)
+        _PT100_MODEL.celsius_to_resistance(self.temperature_c)
 
         standard_deviation = float(
             self.noise_standard_deviation_c
@@ -177,7 +177,7 @@ class NoisyTemperatureReader:
             self.noise_standard_deviation_c,
         )
 
-        return pt100.celsius_to_resistance(
+        return _PT100_MODEL.celsius_to_resistance(
             simulated_temperature
         )
 
@@ -187,7 +187,7 @@ def read_temperature_celsius(
 ) -> float:
     """Read resistance from a source and convert it to Celsius."""
     resistance = reader.read_resistance_ohms()
-    return pt100.resistance_to_celsius(resistance)
+    return _PT100_MODEL.resistance_to_celsius(resistance)
 
 
 def _validate_resistance(resistance_ohms: float) -> float:
@@ -200,6 +200,6 @@ def _validate_resistance(resistance_ohms: float) -> float:
         raise ValueError("Resistance must be greater than zero")
 
     # Validate that the resistance belongs to the supported Pt100 range.
-    pt100.resistance_to_celsius(resistance)
+    _PT100_MODEL.resistance_to_celsius(resistance)
 
     return resistance
